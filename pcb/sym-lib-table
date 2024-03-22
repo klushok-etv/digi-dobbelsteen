@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "rur")(type "Legacy")(uri "${KIPRJMOD}/libraries/rur.lib")(options "")(descr ""))
+)
