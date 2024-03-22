@@ -4,6 +4,7 @@ count = 0
 # counter to keep track of the number of programed chips
 while true;
 do
+    read -t 1 -n 10000
     echo "program sucsess " $count "times"
     echo -en "Press Q to exit or any key to continue\t\t: "
     # most regular keys should work
