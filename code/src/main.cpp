@@ -1,12 +1,12 @@
 /* Attiny Dice v1
   Ryan Kolk - Electrotechnische Vereeniging - 2024
-  ATtiny85 @ 8 MHz (internal oscillator; BOD disabled)
+  ATtiny85 @ 1 MHz (internal oscillator; BOD disabled)
    
   CC BY 4.0
   Licensed under a Creative Commons Attribution 4.0 International license: 
   http://creativecommons.org/licenses/by/4.0/
 
-  Atmet Attiny 25/45/85 pinout
+  Atmet Attiny  pinout
                    +-\/-+
   Ain0 (D 5) PB5  1|    |8  Vcc
   Ain3 (D 3) PB3  2|    |7  PB2 (D 2) Ain1
@@ -41,13 +41,11 @@ const bool Number[6][4] = {
 bool interrupt = false;
 bool awake = true;
 static uint8_t row, ramp;
-void(* resetFunc) (void) = 0;
 
 ISR (PCINT0_vect)        // Interrupt service routine 
 {
   MCUCR&=~(1<<SE);      //Disabling sleep mode inside interrupt routine
   if(awake && digitalRead(PB4) == LOW){
-    // resetFunc();
     interrupt=true;
   }
 }
@@ -80,7 +78,8 @@ ISR(TIM1_COMPA_vect) {
 }
 
 void setup() {
-  if(F_CPU == 8000000) clock_prescale_set(clock_div_1); // Set clock to 8MHz
+  // if(F_CPU == 8000000) clock_prescale_set(clock_div_1); // Set clock to 8MHz
+  clock_prescale_set(clock_div_8); // Set clock to 1MHz
 
   // Set up Timer/Counter1 to contol the LEDs
   TCCR1 = 1<<CTC1 | 1<<CS10;          // Divide by 2
