@@ -6,8 +6,8 @@
 
   (title_block
     (title "Digi Dobbelsteen")
-    (date "2024-01-26")
-    (rev "0.1")
+    (date "2025-03-27")
+    (rev "0.2")
   )
 
   (lib_symbols
@@ -951,6 +951,11 @@
     (uuid f930a1f7-0c72-40f1-9cfa-cec899aa46c8)
   )
 
+  (text "ATtiny25/45/85/13" (at 161.29 36.83 0)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid dcb5a330-336d-452d-9640-7ea53acbd8de)
+  )
+
   (global_label "PB1" (shape input) (at 67.31 107.95 180) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify right))
     (uuid 0e11154e-de44-43da-a742-2a1a77a3be73)
@@ -1168,10 +1173,10 @@
   (symbol (lib_id "MCU_Microchip_ATtiny:ATtiny45-20P") (at 170.18 60.96 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 0c324736-5705-40cd-894b-f6dabe298b93)
-    (property "Reference" "U1" (at 184.15 60.325 0)
+    (property "Reference" "U1" (at 184.15 59.69 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
-    (property "Value" "ATtiny85" (at 184.15 62.865 0)
+    (property "Value" "ATtiny" (at 184.15 62.23 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Footprint" "Package_DIP:DIP-8_W7.62mm" (at 170.18 60.96 0)
@@ -1517,7 +1522,7 @@
     (property "Value" "SW_Push" (at 125.73 54.61 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 125.73 53.34 0)
+    (property "Footprint" "Button_Switch_THT:SW_PUSH-12mm" (at 125.73 53.34 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 125.73 53.34 0)
