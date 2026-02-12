@@ -2,22 +2,14 @@
    Jeremy de Waal - Electrotechnische Vereeniging - 2025
    sub 1k binary developed for use with attiny13
    Feature compatible with version from Ryan Kolk
- */
-// C":\Program Files (x86)\Arduino\hardware\tools\avr\bin/avrdude" -C"C:\Program Files (x86)\Arduino\hardware\tools\avr/etc/avrdude.conf" -pattiny13 -cusbasp-clone -B16kHz -Uflash:w:t13dobbelsteen.elf
-// C":\Program Files (x86)\Arduino\hardware\tools\avr\bin/avrdude" -C"C:\Program Files (x86)\Arduino\hardware\tools\avr/etc/avrdude.conf" -pattiny13 -cusbasp-clone -B16kHz -Ulfuse:w:0x79:m
-// C":\Program Files (x86)\Arduino\hardware\tools\avr\bin/avrdude" -C"C:\Program Files (x86)\Arduino\hardware\tools\avr/etc/avrdude.conf" -pattiny13 -cusbasp-clone -B100kHz -e -Uflash:w:t13dobbelsteen.elf -Ulfuse:w:t13dobbelsteen.elf -Uhfuse:w:t13dobbelsteen.elf -Ueeprom:w:t13dobbelsteen.elf -Ulock:w:t13dobbelsteen.elf
+*/
 
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
-#include <avr/eeprom.h>
 #include <stdlib.h>
 #include <avr/power.h>
-
-char _[] EEMEM = "Version 20250525\nDigi Dobbelsteen\nElectrotechnische Vereeniging";
-LOCKBITS = 0x3e;
-
 
 /* function definitions */
 uint8_t randomDieRoll();
@@ -30,64 +22,55 @@ void setDelayLeft(uint16_t newDelay);
 void myDelay(uint16_t delay);
 
 
-
 /* Global Variables */
-uint16_t rngState = 153;
+uint16_t rngState = 120;
 uint8_t auxRngState = 4; // (VO)
-//uint8_t volatile charlieSlot = 0;
 enum CharlieState {STATE0, STATE1, STATE2};
 enum CharlieState volatile charlieSlot = STATE0;
 uint8_t ledOn, ledOff;
-uint8_t const ledNumber[6] = {0b00000001, 0b00000010, 0b00000011, 0b00001010, 0b00001011, 0b00001110};
-uint8_t volatile lenght, progress;
+uint8_t const ledNumber[6] = {0b00000001, 0b00000010, 0b00000011, 0b00001010, 0b00001011, 0b00001110}; // lookup table
+uint8_t volatile length, progress;
 uint16_t volatile delayLeft;
 
 
 int main(void)
 {
-    //clock_prescale_set(clock_div_1);
-    TCCR0B = (0 << CS02 | 0 << CS01 | 1 << CS00); // No prescaling // div8
+    TCCR0B = (0 << CS02 | 0 << CS01 | 1 << CS00); // Timer/Counter0 run without prescaler
     TIMSK0 = (1 << TOIE0); // Timer/Counter0 Overflow Interrupt Enable
     PCMSK = (1 << PCINT4); // mask pin change interupt 4
     GIMSK = (1 << PCIE); // Pin Change Interrupt Enable
-    sei();
+    sei(); // global interrupt enable
     while(1)
     {
         int16_t delayTime;
-        roll();
+        roll(); // update global variables progress, length
         do // The animation part
         {
             displayRandomNumber();
             progress += 1;
-            delayTime = 50 + (350 * progress / lenght);
-            //delayTime = 100; //TODO need to fix TODO
-            setDelayLeft((uint16_t)(0.001*F_CPU/256)*delayTime);
-            while (delayLeft && progress)
+            delayTime = 50 + (350 * progress / length); // could save some space if replaced by lookup table
+            setDelayLeft((uint16_t)(0.001*F_CPU/256)*delayTime); // configure delay in ms
+            while (delayLeft && progress) // check if delay as elapsed or progress has been reset
             {
-                if (!(PINB & (1 << PIN4)))
+                if (!(PINB & (1 << PIN4))) // keep doing as long as button is down
                 {
                     // get some extra user randomness
                     auxRngUpdate();
                 }
             }
         }
-        while (progress < lenght);
+        while (progress < length);
         // the flashing part
-        ledOff = ledOn;
-        //_delay_ms(300);
-        myDelay(0.3*F_CPU/256);
+        ledOff = ledOn; // store LED enable mask
+        myDelay(0.3*F_CPU/256); // delay 300ms
         ledOn = 0;
-        //_delay_ms(300);
-        myDelay(0.3*F_CPU/256);
+        myDelay(0.3*F_CPU/256); // delay 300ms
         ledOn = ledOff;
-        //_delay_ms(300);
-        myDelay(0.3*F_CPU/256);
+        myDelay(0.3*F_CPU/256); // delay 300ms
         ledOn = 0;
-        //_delay_ms(300);
-        myDelay(0.3*F_CPU/256);
+        myDelay(0.3*F_CPU/256); // delay 300ms
         ledOn = ledOff;
-        // non block delay 1500
-        //delayTime = 1500;
+        // non block delay for 1500ms
         progress = 1;
         setDelayLeft(1.5*F_CPU/256);
         while (delayLeft && progress);
@@ -99,10 +82,9 @@ int main(void)
     return 0;
 }
 
-// Timer overflow interrupt
-ISR(TIM0_OVF_vect)
+
+ISR(TIM0_OVF_vect) // Timer overflow interrupt
 {
-    //charlieSlot = (charlieSlot + 1) % 3;
     PORTB = (1 << PORTB4);
     uint8_t temp = 0;
     switch (charlieSlot){
@@ -157,49 +139,50 @@ ISR(TIM0_OVF_vect)
         PORTB = (1 << PORTB4 | 1 << PORTB1);
     }
     if (delayLeft){
-        delayLeft--;
+        delayLeft--; // decrement the delay counter
     }
 }
 
-void displayRandomNumber()
+void displayRandomNumber() // set new LED enable mask
 {
+    // get random number 0-5
+    // use lookup table to set leds
     ledOn = ledNumber[randomDieRoll()];
 }
 
-uint8_t randomDieRoll()
+uint8_t randomDieRoll() // return a number in range 0-5
 {
     uint8_t x;
     do
     {
+        rngUpdate(); // update the LFSR a few times
         rngUpdate();
         rngUpdate();
-        rngUpdate();
-        x = (rngState ^ auxRngState) & 0b111;
+        x = (rngState ^ auxRngState) & 0b111; // truncate number to 3 bits
     }
-    while (x > 5);
+    while (x > 5); // try again if number is above 5
     return x;
 }
 
-void rngUpdate()
+void rngUpdate() // perform one iteration on the main LFSR
 {
     rngState |= ((rngState << 15) ^ (rngState << 14)) & 1 << 15;
     rngState = (rngState >> 1);
 }
-void auxRngUpdate()
+void auxRngUpdate() // perform one iteration on the auxiliary LFSR
 {
     auxRngState |= ((auxRngState << 6) ^ (auxRngState << 7)) & 1 << 7;
     auxRngState = (auxRngState >> 1);
 }
 
-void goToSleep ()
+void goToSleep () // sleep the mcu until button pressed
 {
-    MCUCR|=(1<<SM1);      // Enabling sleep mode and powerdown sleep mode
-    MCUCR|= (1<<SE);     //Enabling sleep enable bit
     TIMSK0 = (0 << TOIE0); // Timer/Counter0 Overflow Interrupt Disable
-    DDRB = (DDRB & 0xF8) | 0b000;
+    DDRB = 0x00; // ensure all pins are input
+    PORTB = 0xff; // set internal pull up to prevent floating pins (saves some power)
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
     do   // alternative for goto
     {
-        set_sleep_mode(SLEEP_MODE_PWR_DOWN); // also sets the MCUCR? can be removed?
         sleep_enable();
         sleep_cpu();
         sleep_disable();
@@ -209,31 +192,31 @@ void goToSleep ()
     TIMSK0 = (1 << TOIE0); // Timer/Counter0 Overflow Interrupt Enable
 }
 
-ISR (PCINT0_vect)        // Interrupt service routine
+ISR (PCINT0_vect) // pin change Interrupt
 {
-    sleep_disable();
-    if (!(PINB & (1 << PIN4)))
+    sleep_disable(); // exit sleep mode in case mcu was in sleep mode
+    if (!(PINB & (1 << PIN4))) // check if button was pressed
     {
-        roll();
+        roll(); // reset the global variables
     }
-    rngUpdate();
+    rngUpdate(); // update LFSR for good measure
 }
 
-void roll()
+void roll() // sets amount of numbers to show and clears progress
 {
-    lenght = 6 + randomDieRoll() + randomDieRoll(); // some number 6 to 16
-    progress = 0;
+    length = 6 + randomDieRoll() + randomDieRoll(); // generate some number 6 to 16
+    progress = 0; // clear progress
 }
 
-void setDelayLeft(uint16_t newDelay)
+void setDelayLeft(uint16_t newDelay) // safe way to acces variable
 {
     cli();
-    delayLeft = newDelay;
+    delayLeft = newDelay; // set new value
     sei();
 }
 
-void myDelay(uint16_t delay)
+void myDelay(uint16_t delay) // delay based on Timer/Counter0
 {
-    setDelayLeft(delay);
-    while (delayLeft);
+    setDelayLeft(delay); // configure delay duration
+    while (delayLeft); // stall until the timer interrupt has decremented this to zero
 }
