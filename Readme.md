@@ -25,3 +25,11 @@ The schematic was made in KiCad 7.0, so you can use that to open the schematic a
 ## PCB
 
 ![PCB](./PCB.png)
+
+## Programing
+
+A precompiled binary is available for the attiny13 under releases. Upload to the chip using the following command:
+
+```console
+avrdude -p attiny13 -c usbasp-clone -B 100kHz -e -U flash:w:t13dobbelsteen.elf -U lfuse:w:t13dobbelsteen.elf -U hfuse:w:t13dobbelsteen.elf -U eeprom:w:t13dobbelsteen.elf -U lock:w:t13dobbelsteen.elf
+```
